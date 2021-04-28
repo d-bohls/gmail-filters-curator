@@ -1,6 +1,6 @@
 # Sort and validate an xml file containing exported gmail filters - Version 0.1
 # Coded by: Damon Bohls
-# Date modified: 03/15/2021
+# Date modified: 04/26/2021
 
 import os
 import xml.dom.minidom
@@ -54,28 +54,30 @@ def check_filter_entity_properties(xml_root: Element) -> None:
             elif child.tag == get_xml_tag_with_namespace(xml_default_namespace, 'content'):
                 assert child.text is None
             elif child.tag == get_xml_tag_with_namespace(xml_apps_namespace, 'property'):
-                entry_properties.add(child.attrib['name'])
-                if child.attrib['name'] == 'from':
-                    assert len(child.attrib['value']) > 0
-                elif child.attrib['name'] == 'label':
-                    assert len(child.attrib['value']) > 0
-                elif child.attrib['name'] == 'shouldArchive':
+                property_name = child.attrib['name']
+                property_value = child.attrib['value']
+                entry_properties.add(property_name)
+                if property_name == 'from':
+                    assert len(property_value) > 0
+                elif property_name == 'label':
+                    assert len(property_value) > 0
+                elif property_name == 'shouldArchive':
                     print('has shouldArchive')
-                    assert child.attrib['value'] == 'false'
-                elif child.attrib['name'] == 'shouldNeverSpam':
-                    assert child.attrib['value'] == 'true'
-                elif child.attrib['name'] == 'shouldStar':
+                    assert property_value == 'false'
+                elif property_name == 'shouldNeverSpam':
+                    assert property_value == 'true'
+                elif property_name == 'shouldStar':
                     print('has shouldStar')
-                    assert child.attrib['value'] == 'true'
-                elif child.attrib['name'] == 'shouldAlwaysMarkAsImportant':
+                    assert property_value == 'true'
+                elif property_name == 'shouldAlwaysMarkAsImportant':
                     print('has shouldAlwaysMarkAsImportant')
-                    assert child.attrib['value'] == 'true'
-                elif child.attrib['name'] == 'sizeOperator':
-                    assert child.attrib['value'] == 's_sl'
-                elif child.attrib['name'] == 'sizeUnit':
-                    assert child.attrib['value'] == 's_smb'
+                    assert property_value == 'true'
+                elif property_name == 'sizeOperator':
+                    assert property_value == 's_sl'
+                elif property_name == 'sizeUnit':
+                    assert property_value == 's_smb'
                 else:
-                    print('unknown property: ' + child.attrib['name'] + '=' + child.attrib['value'])
+                    print('unknown property: ' + property_name + '=' + property_value)
             else:
                 print('unknown tag: ' + child.tag)
 
