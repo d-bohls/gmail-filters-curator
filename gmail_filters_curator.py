@@ -1,6 +1,4 @@
-# Sort and validate an xml file containing exported gmail filters - Version 0.1
-# Coded by: Damon Bohls
-# Date modified: 04/26/2021
+"""Sort and validate an xml file containing exported gmail filters."""
 
 import os
 import xml.dom.minidom
