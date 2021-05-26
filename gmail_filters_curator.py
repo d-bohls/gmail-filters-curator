@@ -1,5 +1,6 @@
 """Sort and validate an xml file containing exported gmail filters."""
 
+import json
 import os
 import xml.dom.minidom
 from typing import Dict, List
@@ -19,70 +20,6 @@ def get_xml_tag_with_namespace(namespace: str, tag: str) -> str:
     return '{' + namespace + '}' + tag
 
 
-def check_filter_entity_properties(xml_root: Element) -> None:
-    required_filter_entry_tags = {
-        get_xml_tag_with_namespace(xml_default_namespace, 'category'),
-        get_xml_tag_with_namespace(xml_default_namespace, 'title'),
-        get_xml_tag_with_namespace(xml_default_namespace, 'id'),
-        get_xml_tag_with_namespace(xml_default_namespace, 'updated'),
-        get_xml_tag_with_namespace(xml_default_namespace, 'content'),
-        get_xml_tag_with_namespace(xml_apps_namespace, 'property'),
-    }
-
-    required_filter_entry_properties = {
-        'from',
-        'label',
-        'shouldNeverSpam',
-    }
-
-    filter_entries = xml_root.findall(get_xml_tag_with_namespace(xml_default_namespace, 'entry'))
-    for entry in filter_entries:
-        entry_tags = set()
-        entry_properties = set()
-        for child in entry:
-            entry_tags.add(child.tag)
-            if child.tag == get_xml_tag_with_namespace(xml_default_namespace, 'category'):
-                assert child.attrib['term'] == 'filter'
-            elif child.tag == get_xml_tag_with_namespace(xml_default_namespace, 'title'):
-                assert child.text == 'Mail Filter'
-            elif child.tag == get_xml_tag_with_namespace(xml_default_namespace, 'id'):
-                assert child.text is not None and len(child.text) > 0
-            elif child.tag == get_xml_tag_with_namespace(xml_default_namespace, 'updated'):
-                assert child.text is not None and len(child.text) > 0
-            elif child.tag == get_xml_tag_with_namespace(xml_default_namespace, 'content'):
-                assert child.text is None
-            elif child.tag == get_xml_tag_with_namespace(xml_apps_namespace, 'property'):
-                property_name = child.attrib['name']
-                property_value = child.attrib['value']
-                entry_properties.add(property_name)
-                if property_name == 'from':
-                    assert len(property_value) > 0
-                elif property_name == 'label':
-                    assert len(property_value) > 0
-                elif property_name == 'shouldArchive':
-                    print('has shouldArchive')
-                    assert property_value == 'false'
-                elif property_name == 'shouldNeverSpam':
-                    assert property_value == 'true'
-                elif property_name == 'shouldStar':
-                    print('has shouldStar')
-                    assert property_value == 'true'
-                elif property_name == 'shouldAlwaysMarkAsImportant':
-                    print('has shouldAlwaysMarkAsImportant')
-                    assert property_value == 'true'
-                elif property_name == 'sizeOperator':
-                    assert property_value == 's_sl'
-                elif property_name == 'sizeUnit':
-                    assert property_value == 's_smb'
-                else:
-                    print('unknown property: ' + property_name + '=' + property_value)
-            else:
-                print('unknown tag: ' + child.tag)
-
-        assert entry_tags.issuperset(required_filter_entry_tags)
-        assert entry_properties.issuperset(required_filter_entry_properties)
-
-
 def get_filter_entry_label(entry: ElementTree.Element) -> str:
     label = ''
     for child in entry:
@@ -100,6 +37,48 @@ def sort_filter_entries_by_label(xml_root: Element) -> None:
     for entry in filter_entries:
         xml_root.remove(entry)
         xml_root.append(entry)
+
+
+def check_filter_entity_properties(xml_root: Element, rules_json_path: str) -> None:
+    with open(rules_json_path) as rules_file:
+        json_filter_file = json.loads(rules_file.read())
+
+    filter_rules = json_filter_file['rules']
+    labels_to_ignore = json_filter_file['ignored labels']
+    xml_filter_entries = xml_root.findall(get_xml_tag_with_namespace(xml_default_namespace, 'entry'))
+    
+    for xml_entry in xml_filter_entries:
+        encountered_elements = set()
+        encountered_properties = set()
+        label = get_filter_entry_label(xml_entry)
+        if label in labels_to_ignore:
+            print('Ignoring: ' + label)
+            continue
+        print('Checking: ' + label)
+        for element in xml_entry:
+            encountered_elements.add(element.tag)
+            assert element.tag in filter_rules
+            json_rule_element = filter_rules[element.tag]
+            if isinstance(json_rule_element, dict):
+                attribute_name = element.attrib['name']
+                encountered_properties.add(attribute_name)
+                assertion = json_rule_element[attribute_name]
+            else:
+                assertion = json_rule_element
+
+            eval_result = eval(assertion)
+            assert eval_result, 'Issue with filter for label ' + label + '. Assertion failed: ' + assertion
+
+        expected_elements = set(filter_rules.keys())
+        expected_properties = set(filter_rules[get_xml_tag_with_namespace(xml_apps_namespace, 'property')].keys())
+        unexpected_elements = encountered_elements - expected_elements
+        unexpected_properties = encountered_properties - expected_properties
+        missing_elements = expected_elements - encountered_elements
+        missing_properties = expected_properties - encountered_properties
+        assert not unexpected_elements
+        assert not unexpected_properties
+        assert not missing_elements
+        assert not missing_properties
 
 
 def get_xml_root(xml_file: str, xml_namespaces: Dict[str, str]) -> Element:
@@ -125,9 +104,12 @@ def parse_args(args: List[str]) -> Dict[str, str]:
     dir_of_executing_file = os.path.dirname(os.path.abspath(__file__))
     default_input_filepath = os.path.join(dir_of_executing_file, 'gmail_filters_export.xml')
     default_output_filepath = os.path.join(dir_of_executing_file, 'gmail_filters_output.xml')
+    default_rules_filepath = os.path.join(dir_of_executing_file, 'rules.json')
     parser = argparse.ArgumentParser(description=parser_description)
     parser.add_argument('-inFile', default=default_input_filepath, help='Filepath to an input xml file.')
     parser.add_argument('-outFile', default=default_output_filepath, help='Filepath to the output xml file.')
+    parser.add_argument('-rulesFile', default=default_rules_filepath, help='Filepath to json file that describes '
+                                                                           'validation.')
     return vars(parser.parse_args(args))
 
 
@@ -135,9 +117,10 @@ def main(args: List[str]) -> None:
     args_dict = parse_args(args)
     input_filter_xml_path = args_dict['inFile']
     output_filter_xml_path = args_dict['outFile']
+    rules_json_path = args_dict['rulesFile']
 
     xml_root = get_xml_root(input_filter_xml_path, xml_namespaces_dict)
-    check_filter_entity_properties(xml_root)
+    check_filter_entity_properties(xml_root, rules_json_path)
     sort_filter_entries_by_label(xml_root)
     write_xml_root(xml_root, output_filter_xml_path)
 

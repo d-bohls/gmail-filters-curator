@@ -1,0 +1,22 @@
+{
+    "rules": {
+        "{http://www.w3.org/2005/Atom}category": "element.attrib['term'] == 'filter'",
+        "{http://www.w3.org/2005/Atom}title": "element.text == 'Mail Filter'",
+        "{http://www.w3.org/2005/Atom}id": "len(element.text) > 0",
+        "{http://www.w3.org/2005/Atom}updated": "len(element.text) > 0",
+        "{http://www.w3.org/2005/Atom}content": "not element.text",
+        "{http://schemas.google.com/apps/2006}property": {
+            "from": "len(element.attrib['value']) > 0",
+            "label": "len(element.attrib['value']) > 0",
+            "shouldNeverSpam": "element.attrib['value'] == 'true'",
+            "sizeOperator": "element.attrib['value'] == 's_sl'",
+            "sizeUnit": "element.attrib['value'] == 's_smb'"
+        }
+    },
+    "ignored labels": [
+        "Businesses/AWS",
+        "Businesses/Google/Calendar",
+        "Current/damonbohls.com",
+        "Financial/IRS"
+    ]
+}
