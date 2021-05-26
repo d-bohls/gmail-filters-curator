@@ -1,6 +1,7 @@
 """Sort and validate an xml file containing exported gmail filters."""
 
 import json
+import logging
 import os
 import xml.dom.minidom
 from typing import Dict, List
@@ -52,9 +53,9 @@ def check_filter_entity_properties(xml_root: Element, rules_json_path: str) -> N
         encountered_properties = set()
         label = get_filter_entry_label(xml_entry)
         if label in labels_to_ignore:
-            print('Ignoring: ' + label)
+            logging.info('Ignoring: ' + label)
             continue
-        print('Checking: ' + label)
+        logging.debug('Checking: ' + label)
         for element in xml_entry:
             encountered_elements.add(element.tag)
             assert element.tag in filter_rules
@@ -110,11 +111,28 @@ def parse_args(args: List[str]) -> Dict[str, str]:
     parser.add_argument('-outFile', default=default_output_filepath, help='Filepath to the output xml file.')
     parser.add_argument('-rulesFile', default=default_rules_filepath, help='Filepath to json file that describes '
                                                                            'validation.')
+    parser.add_argument(
+        '-d', '--debug',
+        help="Show debug logging.",
+        action="store_const", dest="log_level", const=logging.DEBUG,
+        default=logging.WARNING,
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        help="Show verbose logging.",
+        action="store_const", dest="log_level", const=logging.INFO,
+    )
+
     return vars(parser.parse_args(args))
 
 
 def main(args: List[str]) -> None:
     args_dict = parse_args(args)
+    
+    logging.basicConfig(level=args_dict['log_level'])
+    logging.debug('Debug logging enabled.')
+    logging.info('Verbose logging enabled.')
+
     input_filter_xml_path = args_dict['inFile']
     output_filter_xml_path = args_dict['outFile']
     rules_json_path = args_dict['rulesFile']
