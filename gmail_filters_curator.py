@@ -95,8 +95,8 @@ def write_xml_root(xml_root: Element, output_path: str) -> None:
     xml_dom = xml.dom.minidom.parseString(xml_string)
     xml_pretty_str = xml_dom.toprettyxml(encoding='UTF-8').decode('UTF-8')
     xml_pretty_str = os.linesep.join([s for s in xml_pretty_str.splitlines() if s.strip()])
-    with open(output_path, 'w') as text_file:
-        text_file.write(xml_pretty_str)
+    with open(output_path, 'wb') as text_file:
+        text_file.write(xml_pretty_str.encode('UTF-8'))
 
 
 def parse_args(args: List[str]) -> Dict[str, str]:
