@@ -18,7 +18,7 @@ xml_namespaces_dict = {
 
 
 def get_xml_tag_with_namespace(namespace: str, tag: str) -> str:
-    return '{' + namespace + '}' + tag
+    return f'{{{namespace}}}{tag}'
 
 
 def get_filter_entry_label(entry: ElementTree.Element) -> str:
@@ -53,9 +53,9 @@ def check_filter_entity_properties(xml_root: Element, rules_json_path: str) -> N
         encountered_properties = set()
         label = get_filter_entry_label(xml_entry)
         if label in labels_to_ignore:
-            logging.info('Ignoring: ' + label)
+            logging.info(f'Ignoring: {label}')
             continue
-        logging.debug('Checking: ' + label)
+        logging.debug(f'Checking: {label}')
         for element in xml_entry:
             encountered_elements.add(element.tag)
             assert element.tag in filter_rules
@@ -68,7 +68,7 @@ def check_filter_entity_properties(xml_root: Element, rules_json_path: str) -> N
                 assertion = json_rule_element
 
             eval_result = eval(assertion)
-            assert eval_result, 'Issue with filter for label ' + label + '. Assertion failed: ' + assertion
+            assert eval_result, f'Issue with filter for label {label}. Assertion failed: {assertion}'
 
         expected_elements = set(filter_rules.keys())
         expected_properties = set(filter_rules[get_xml_tag_with_namespace(xml_apps_namespace, 'property')].keys())
