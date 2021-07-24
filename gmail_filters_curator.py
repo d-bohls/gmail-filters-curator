@@ -62,6 +62,7 @@ def check_filter_entity_properties(xml_root: Element, rules_json_path: str) -> N
             json_rule_element = filter_rules[element.tag]
             if isinstance(json_rule_element, dict):
                 attribute_name = element.attrib['name']
+                assert attribute_name in json_rule_element
                 encountered_properties.add(attribute_name)
                 assertion = json_rule_element[attribute_name]
             else:
@@ -141,6 +142,8 @@ def main(args: List[str]) -> None:
     check_filter_entity_properties(xml_root, rules_json_path)
     sort_filter_entries_by_label(xml_root)
     write_xml_root(xml_root, output_filter_xml_path)
+
+    logging.info('The script has completed successfully.')
 
 
 if __name__ == '__main__':
