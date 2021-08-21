@@ -34,7 +34,7 @@ def get_filter_entry_label(entry: ElementTree.Element) -> str:
 
 def sort_filter_entries_by_label(xml_root: Element) -> None:
     filter_entries = xml_root.findall(get_xml_tag_with_namespace(xml_default_namespace, 'entry'))
-    filter_entries.sort(key=lambda e: get_filter_entry_label(e))
+    filter_entries.sort(key=get_filter_entry_label)
     for entry in filter_entries:
         xml_root.remove(entry)
         xml_root.append(entry)
