@@ -16,8 +16,12 @@
     "ignored labels": [
         "Businesses/AWS",
         "Businesses/Google/Calendar",
-        "Misc/damonbohls.com",
-        "Financial/IRS",
-        "Financial/Social Security"
+        "Businesses/Park ATX",
+        "Financial/Social Security",
+        "Financial/Taxes/IRS",
+        "Food/Newk's",
+        "Food/Uber Eats",
+        "Other/damonbohls.com",
+        "Other/Hotmail"
     ]
 }
